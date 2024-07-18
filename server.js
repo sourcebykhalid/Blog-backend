@@ -19,7 +19,7 @@ const app = express();
 
 // Middleware
 app.use(helmet()); // Security headers
-app.use(cors({ origin: "https://blogbeats.netlify.app" })); // Restrict CORS to your frontend domain
+app.use(cors({ origin: "https://blogbeacon.vercel.app" })); // Restrict CORS to your frontend domain
 app.use(express.json()); // Parse JSON bodies
 app.use(morgan("dev")); // Logging middleware
 

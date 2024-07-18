@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import helmet from "helmet";
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
@@ -17,7 +18,8 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors()); // Enable CORS for all origins (*)
+app.use(helmet()); // Security headers
+app.use(cors({ origin: "https://blogbeats.netlify.app" })); // Restrict CORS to your frontend domain
 app.use(express.json()); // Parse JSON bodies
 app.use(morgan("dev")); // Logging middleware
 

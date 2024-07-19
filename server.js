@@ -11,17 +11,39 @@ import commentRoutes from "./routes/commentRoutes.js";
 // Load environment variables
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ["PORT", "MONGO_URL", "DEV_MODE"];
+requiredEnvVars.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+});
+
 // Connect to MongoDB
 connectDB();
 
 // Initialize Express app
 const app = express();
 
-// Middleware
-app.use(helmet()); // Security headers
-app.use(cors({ origin: "https://blogbeacon.vercel.app" })); // Restrict CORS to your frontend domain
-app.use(express.json()); // Parse JSON bodies
-app.use(morgan("dev")); // Logging middleware
+// Middleware for security headers
+app.use(helmet());
+
+// CORS configuration
+const corsOptions = {
+  origin: ["https://blogbeacon.vercel.app", "http://localhost:5174"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Parse JSON bodies
+app.use(express.json());
+
+// Logging middleware
+app.use(morgan("dev"));
 
 // Welcome route
 app.get("/", (req, res) => {
@@ -36,11 +58,21 @@ app.use("/api/v1/comments", commentRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).send("Something went wrong!");
+  if (err.name === "ValidationError") {
+    return res.status(400).json({ error: err.message });
+  }
+  res.status(500).json({ error: "Something went wrong!" });
 });
 
 // Start the server
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  server.close(() => {
+    console.log("Process terminated");
+  });
 });

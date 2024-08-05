@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import multer from "multer";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import connectDB from "./config/db.js";
@@ -48,6 +49,24 @@ app.use(morgan("dev"));
 // Welcome route
 app.get("/", (req, res) => {
   res.send("Welcome to the Blog Beacon API");
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+// File upload
+app.post("/api/v1/blog/upload", upload.single("file"), (req, res) => {
+  try {
+    const fileBuffer = req.file.buffer;
+    // Process the file buffer (e.g., upload to a cloud storage service)
+    res.status(200).send({
+      message: "File uploaded successfully",
+      // Add additional information if necessary
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: "Error uploading file",
+      error: error.message,
+    });
+  }
 });
 
 // Routes

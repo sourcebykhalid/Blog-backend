@@ -1,17 +1,20 @@
 import userModel from "../models/userModel.js";
 import bcrypt from "bcrypt";
+
 const registerController = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    const image = req.file ? req.file.filename : null;
 
-    //validation
+    // validation
     if (!username || !email || !password) {
       return res.status(400).send({
         success: false,
-        message: "Please fill all validations",
+        message: "Please fill all fields",
       });
     }
-    //existing user
+
+    // existing user check
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(401).send({
@@ -19,10 +22,18 @@ const registerController = async (req, res) => {
         message: "User already exists",
       });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    //save new user
-    const user = new userModel({ username, email, password: hashedPassword });
+
+    // save new user
+    const user = new userModel({
+      username,
+      email,
+      password: hashedPassword,
+      image,
+    });
     await user.save();
+
     return res.status(201).send({
       success: true,
       message: "User created successfully",

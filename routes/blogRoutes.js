@@ -7,30 +7,26 @@ import {
   updateBlogController,
   userBlogController,
 } from "../controllers/blogController.js";
+import { upload } from "../config/cloudinaryConfig.js"; // Import the Cloudinary config
 
-//router object
 const router = express.Router();
 
-//routes
-//GET || all blogs
+// GET || all blogs
 router.get("/all-blogs", getAllBlogsController);
 
-//POST || create blog
-router.post("/create-blog", createBlogController);
+// POST || create blog with file upload
+router.post("/create-blog", upload.single("image"), createBlogController);
 
-//PUT || update blog
-router.put("/update-blog/:id", updateBlogController);
+// PUT || update blog
+router.put("/update-blog/:id", upload.single("image"), updateBlogController);
 
-//GET || single blog details
+// GET || single blog details
 router.get("/get-blog/:id", getBlogByIdController);
 
-//DELETE || delete blog
+// DELETE || delete blog
 router.delete("/delete-blog/:id", deleteBlogController);
 
-//GET || user blog
+// GET || user blog
 router.get("/user-blog/:id", userBlogController);
-
-//POST || add comments
-// router.post("/add-comment", addCommentController);
 
 export default router;

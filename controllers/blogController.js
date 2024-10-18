@@ -32,20 +32,22 @@ const getAllBlogsController = async (req, res) => {
 //CREATE BLOG
 const createBlogController = async (req, res) => {
   try {
-    const { title, description, category, image, user } = req.body;
-    //Validation
+    const { title, description, category, user } = req.body;
+    const image = req.file?.path; // Cloudinary image path
+
+    // Validation
     if (!title || !description || !category || !image || !user) {
       return res.status(400).send({
         success: false,
-        message: "Please provide all feilds",
+        message: "Please provide all fields",
       });
     }
+
     const existingUser = await userModel.findById(user);
-    //validate
     if (!existingUser) {
       return res.status(404).send({
         success: false,
-        message: "unable to find the user",
+        message: "Unable to find the user",
       });
     }
 
@@ -56,46 +58,50 @@ const createBlogController = async (req, res) => {
       image,
       user,
     });
+
     const session = await mongoose.startSession();
     session.startTransaction();
     await newBlog.save({ session });
     existingUser.blogs.push(newBlog);
     await existingUser.save({ session });
     await session.commitTransaction();
-    await newBlog.save();
+
     return res.status(201).send({
       success: true,
       message: "Blog created successfully",
       newBlog,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(400).send({
+    console.error(error); // Log the error
+    return res.status(500).send({
       success: false,
-      message: "Error while creating blog",
-      error,
+      message: "Error while creating the blog",
+      error: error.message || error, // Send a specific error message
     });
   }
 };
 
-//UPDATE BLOG
+// UPDATE BLOG
 const updateBlogController = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, category, image } = req.body;
+    const { title, description, category } = req.body;
+    const image = req.file?.path; // Updated Cloudinary image path, if provided
+
     const blog = await blogModel.findByIdAndUpdate(
       id,
-      { ...req.body },
+      { title, description, category, image: image || req.body.image },
       { new: true }
     );
+
     return res.status(200).send({
       success: true,
-      message: "Blog Updated!",
+      message: "Blog updated successfully",
       blog,
     });
   } catch (error) {
     console.log(error);
-    return res.status(400).send({
+    return res.status(500).send({
       success: false,
       message: "Error while updating blog",
       error,

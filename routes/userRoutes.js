@@ -6,6 +6,7 @@ import {
   registerController,
   updateUser,
 } from "../controllers/userController.js";
+import upload from "../middleware/multerConfig.js"; // Import the Multer configuration
 
 // router object
 const router = express.Router();
@@ -13,19 +14,16 @@ const router = express.Router();
 // Get all users || GET
 router.get("/all-users", getAllUsers);
 
-//GET user profile
+// GET user profile
 router.get("/current-user/:id", getUser);
 
-//UPDATE user profile
+// UPDATE user profile
 router.put("/update-user/:id", updateUser);
 
 // Create a user || POST
-router.post("/register", registerController);
+router.post("/register", upload.single("image"), registerController); // Updated route
 
 // Login user || POST
 router.post("/login", loginController);
-
-// Profile || GET
-// router.get("/profile", getProfile);
 
 export default router;

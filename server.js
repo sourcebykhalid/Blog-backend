@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import multer from "multer";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import connectDB from "./config/db.js";
@@ -9,7 +8,6 @@ import userRoutes from "./routes/userRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 
-// Load environment variables
 dotenv.config();
 
 // Validate required environment variables
@@ -31,10 +29,24 @@ app.use(helmet());
 
 // CORS configuration
 const corsOptions = {
-  origin: ["https://blogbeacon.vercel.app", "http://localhost:5174"],
+  origin: [
+    "https://blogbeacon.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+    "http://localhost:8080",
+  ],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 204,
+
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Cross-Origin-Resource-Policy",
+  ],
+  exposedHeaders: ["Cross-Origin-Resource-Policy"],
 };
 
 // Apply CORS middleware
@@ -51,28 +63,21 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Blog Beacon API");
 });
 
-const upload = multer({ storage: multer.memoryStorage() });
-// File upload
-app.post("/api/v1/blog/upload", upload.single("file"), (req, res) => {
-  try {
-    const fileBuffer = req.file.buffer;
-    // Process the file buffer (e.g., upload to a cloud storage service)
-    res.status(200).send({
-      message: "File uploaded successfully",
-      // Add additional information if necessary
-    });
-  } catch (error) {
-    res.status(500).send({
-      message: "Error uploading file",
-      error: error.message,
-    });
-  }
-});
-
+// Set storage engine
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
 // Routes
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/blog", blogRoutes);
 app.use("/api/v1/comments", commentRoutes);
+app.use(
+  "/uploads",
+  express.static("uploads", {
+    setHeaders: (res, path, stat) => {
+      res.set("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  })
+);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

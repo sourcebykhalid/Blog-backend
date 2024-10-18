@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "email is required"],
     },
     image: {
-      type: String,
+      type: String, // Store the filename
     },
     password: {
       type: String,
@@ -27,5 +27,5 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const userModel = mongoose.model("User", userSchema);
-export default userModel;
+const User = mongoose.model("User", userSchema);
+export default User;

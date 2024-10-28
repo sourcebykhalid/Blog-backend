@@ -1,29 +1,31 @@
 import userModel from "../models/userModel.js";
 import bcrypt from "bcrypt";
-
+import { validationResult } from "express-validator"; // Add this for validation
+import jwt from "jsonwebtoken";
 const registerController = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    const image = req.file ? req.file.filename : null;
-
-    // validation
-    if (!username || !email || !password) {
-      return res.status(400).send({
+    const errors = validationResult(req); // Use express-validator for validation
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
         success: false,
-        message: "Please fill all fields",
+        message: "Validation failed",
+        errors: errors.array(),
       });
     }
+
+    const { username, email, password } = req.body;
+    const image = req.file ? req.file.filename : null;
 
     // existing user check
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res.status(401).send({
+      return res.status(409).json({
         success: false,
         message: "User already exists",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12); // Increased salt rounds
 
     // save new user
     const user = new userModel({
@@ -34,17 +36,17 @@ const registerController = async (req, res) => {
     });
     await user.save();
 
-    return res.status(201).send({
+    return res.status(201).json({
       success: true,
       message: "User created successfully",
-      user,
+      user: { id: user._id, username, email, image },
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({
-      message: "Error in register callback",
+    console.error("Error in registerController:", error); // More specific logging
+    return res.status(500).json({
       success: false,
-      error,
+      message: "Error in registration",
+      error: error.message,
     });
   }
 };
@@ -126,37 +128,59 @@ const updateUser = async (req, res) => {
 const loginController = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Validate input
     if (!email || !password) {
-      return res.status(401).send({
+      return res.status(400).json({
         success: false,
         message: "Please provide email and password",
       });
     }
+
+    // Find user by email
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.status(200).send({
+      return res.status(404).json({
         success: false,
         message: "Email not registered",
       });
     }
+
+    // Compare provided password with the hashed password in the database
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).send({
+      return res.status(401).json({
         success: false,
         message: "Invalid username or password",
       });
     }
-    return res.status(200).send({
+
+    // Create JWT token
+    const token = jwt.sign(
+      {
+        userId: user._id, // Using user ID for security reasons
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" } // Set token expiration time
+    );
+
+    // Send response with user data and token
+    return res.status(200).json({
       success: true,
       message: "Login successfully",
-      user,
+      token, // Include the token in the response
+      user: {
+        email: user.email,
+        firstname: user.firstname,
+        lastname: user.lastname,
+      },
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({
+    console.error(error);
+    return res.status(500).json({
       success: false,
-      message: "Error in login callback",
-      error,
+      message: "Internal Server Error",
+      error: error.message,
     });
   }
 };

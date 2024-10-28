@@ -82,15 +82,16 @@ const createBlogController = async (req, res) => {
 };
 
 // UPDATE BLOG
+// UPDATE BLOG
 const updateBlogController = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, category } = req.body;
-    const image = req.file?.path; // Updated Cloudinary image path, if provided
+    const image = req.file?.path || req.body.image; // Use existing image if no new one provided
 
     const blog = await blogModel.findByIdAndUpdate(
       id,
-      { title, description, category, image: image || req.body.image },
+      { title, description, category, image },
       { new: true }
     );
 

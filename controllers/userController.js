@@ -74,6 +74,7 @@ const getAllUsers = async (req, res) => {
 //GET User Profile
 const getUser = async (req, res) => {
   const { id } = req.params; // Destructure directly from req.params, not req.params.id
+  console.log("ID received:", id);
   try {
     const userProfile = await userModel.findById(id);
 
@@ -100,26 +101,64 @@ const getUser = async (req, res) => {
 };
 
 //UPDATE User
+// UPDATE User
 const updateUser = async (req, res) => {
   try {
+    const errors = validationResult(req); // Use express-validator for validation
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
     const { id } = req.params;
-    const { username, image, email } = req.body;
-    const user = await userModel.findByIdAndUpdate(
+    const { username, email } = req.body;
+    const image = req.file ? req.file.filename : null;
+
+    // Check if the user exists
+    const existingUser = await userModel.findById(id);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // If email is being updated, check for duplicates
+    if (email && email !== existingUser.email) {
+      const emailExists = await userModel.findOne({ email });
+      if (emailExists) {
+        return res.status(409).json({
+          success: false,
+          message: "Email is already in use",
+        });
+      }
+    }
+
+    // Update user
+    const updatedUser = await userModel.findByIdAndUpdate(
       id,
-      { ...req.body },
-      { new: true }
+      {
+        username: username || existingUser.username,
+        email: email || existingUser.email,
+        image: image || existingUser.image,
+      },
+      { new: true, runValidators: true }
     );
-    return res.status(200).send({
+
+    return res.status(200).json({
       success: true,
       message: "User Updated!",
-      user,
+      user: updatedUser,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(400).send({
+    console.error("Error in updateUser:", error); // More specific logging
+    return res.status(500).json({
       success: false,
       message: "Error while updating user",
-      error,
+      error: error.message,
     });
   }
 };
@@ -168,11 +207,12 @@ const loginController = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Login successfully",
-      token, // Include the token in the response
+      token,
       user: {
         email: user.email,
         firstname: user.firstname,
         lastname: user.lastname,
+        _id: user._id, // Include user ID here
       },
     });
   } catch (error) {
